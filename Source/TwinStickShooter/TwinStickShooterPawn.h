@@ -9,6 +9,8 @@ class ATwinStickShooterPawn : public APawn
 {
 	GENERATED_BODY()
 
+	const float MaxLocationDistanceDiff = 10.f;
+
 	/* The mesh component */
 	UPROPERTY(Category = Mesh, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* ShipMeshComponent;
@@ -62,11 +64,14 @@ public:
 
 private:
 
+	UFUNCTION(Client, Reliable)
+    void ClientAdjustMovement(const FVector& ClientLocation, const FVector& ClientVelocity);
+	
 	UFUNCTION(Server, Reliable, WithValidation)
-    void ServerMove(const FVector& Delta);
-    void ServerMove_Implementation(const FVector& Delta);
-    bool ServerMove_Validate(const FVector& Delta);
-
+    void ServerMove(const FVector& Delta, const FVector& ClientLocation);
+	void ServerMoveHandleClientError(const FVector& ClientLocation);
+	
+	void ReplicateMoveToServer(const FVector& Delta);
 	void Move(const FVector& Delta);
 		
 	/* Flag to control firing  */
