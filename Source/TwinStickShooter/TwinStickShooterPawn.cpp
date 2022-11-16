@@ -99,8 +99,16 @@ void ATwinStickShooterPawn::ComputeMove(float DeltaSeconds)
 	// Calculate  movement
 	const FVector Movement = MoveDirection * MoveSpeed * DeltaSeconds;
 
-	Move(Movement);
-	ServerMove(Movement);
+	// Handle Server movement response
+	// Snap position TODO
+	
+	ReplicateMoveToServer(Movement);
+}
+
+void ATwinStickShooterPawn::ReplicateMoveToServer(const FVector& Delta)
+{
+	Move(Delta);
+	ServerMove(Delta, GetActorLocation());
 }
 
 void ATwinStickShooterPawn::Move(const FVector& Movement)
@@ -190,13 +198,32 @@ float ATwinStickShooterPawn::TakeDamage(float DamageAmount, struct FDamageEvent 
 	return ActualDamage;
 }
 
-void ATwinStickShooterPawn::ServerMove_Implementation(const FVector& Delta)
+void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity)
 {
-	// Move the client
-	Move(Delta);
+	SetActorLocation(ClientLocation);
+	RootComponent->ComponentVelocity = ClientVelocity;
 }
 
-bool ATwinStickShooterPawn::ServerMove_Validate(const FVector& Delta)
+void ATwinStickShooterPawn::ServerMoveHandleClientError(const FVector& ClientLocation)
+{
+	const FVector LocationDelta = GetActorLocation() - ClientLocation;
+	if (LocationDelta.Size() > MaxLocationDistanceDiff)
+	{
+		// Adjust the client movement
+		ClientAdjustMovement(GetActorLocation(), GetRootComponent()->ComponentVelocity);
+		GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Blue, "Error");
+	}
+}
+
+void ATwinStickShooterPawn::ServerMove_Implementation(const FVector& Delta, const FVector& ClientLocation)
+{
+	// Move Autonomous (Client)
+	Move(Delta);
+
+	ServerMoveHandleClientError(ClientLocation);
+}
+
+bool ATwinStickShooterPawn::ServerMove_Validate(const FVector& Delta, const FVector& ClientLocation)
 {
 	return true;
 }
