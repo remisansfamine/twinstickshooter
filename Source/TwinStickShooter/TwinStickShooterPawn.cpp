@@ -65,6 +65,10 @@ void ATwinStickShooterPawn::SetupPlayerInputComponent(class UInputComponent* Pla
 
 void ATwinStickShooterPawn::Tick(float DeltaSeconds)
 {
+	// Cancel movement logic for server
+	if (GetLocalRole() != ENetRole::ROLE_AutonomousProxy)
+		return;
+	
 	if (!bIsAlive)
 		return;
 
@@ -95,6 +99,12 @@ void ATwinStickShooterPawn::ComputeMove(float DeltaSeconds)
 	// Calculate  movement
 	const FVector Movement = MoveDirection * MoveSpeed * DeltaSeconds;
 
+	Move(Movement);
+	ServerMove(Movement);
+}
+
+void ATwinStickShooterPawn::Move(const FVector& Movement)
+{
 	// If non-zero size, move this actor
 	if (Movement.SizeSquared() > 0.0f)
 	{
@@ -178,4 +188,15 @@ float ATwinStickShooterPawn::TakeDamage(float DamageAmount, struct FDamageEvent 
 		}
 	}
 	return ActualDamage;
+}
+
+void ATwinStickShooterPawn::ServerMove_Implementation(const FVector& Delta)
+{
+	// Move the client
+	Move(Delta);
+}
+
+bool ATwinStickShooterPawn::ServerMove_Validate(const FVector& Delta)
+{
+	return true;
 }
