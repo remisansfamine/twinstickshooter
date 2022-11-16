@@ -62,6 +62,13 @@ public:
 
 private:
 
+	UFUNCTION(Server, Reliable, WithValidation)
+    void ServerMove(const FVector& Delta);
+    void ServerMove_Implementation(const FVector& Delta);
+    bool ServerMove_Validate(const FVector& Delta);
+
+	void Move(const FVector& Delta);
+		
 	/* Flag to control firing  */
 	uint32 bCanFire : 1;
 
