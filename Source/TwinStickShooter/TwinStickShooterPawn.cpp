@@ -85,7 +85,7 @@ void ATwinStickShooterPawn::Tick(float DeltaSeconds)
 	const FVector FireDirection = FVector(FireForwardValue, FireRightValue, 0.f);
 
 	// Try and fire a shot
-	FireShot(FireDirection);
+	FireShot(FireDirection.GetSafeNormal());
 
 	// Apply movement
 	ComputeMove(DeltaSeconds);
@@ -148,17 +148,18 @@ void ATwinStickShooterPawn::ClientUpdatePositionAfterServerUpdate()
 	bUpdatePosition = false;
 }
 
-void ATwinStickShooterPawn::Shot(FVector FireDirection)
+void ATwinStickShooterPawn::ServerShot(FVector FireDirection, FVector ClientLocation, bool bIsVirtualShot)
 {
 	const FRotator FireRotation = FireDirection.Rotation();
 	// Spawn projectile at an offset from this pawn
-	const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(GunOffset);
+	const FVector SpawnLocation = ClientLocation + FireRotation.RotateVector(GunOffset);
 
 	UWorld* const World = GetWorld();
-	if (World != NULL)
+	if (World)
 	{
 		// Spawn the projectile
-		World->SpawnActor<ATwinStickShooterProjectile>(SpawnLocation, FireRotation);
+		if (ATwinStickShooterProjectile* projectile = World->SpawnActor<ATwinStickShooterProjectile>(SpawnLocation, FireRotation))
+			projectile->bIsVirtual = bIsVirtualShot;
 	}
 
 	bCanFire = false;
@@ -222,12 +223,13 @@ float ATwinStickShooterPawn::TakeDamage(float DamageAmount, struct FDamageEvent 
 
 void ATwinStickShooterPawn::ServerShootProjectile_Implementation(FVector FireDirection)
 {
-	ClientShootProjectile(FireDirection);
+	// TODO Use TimeStamp to know where and when the client has shoot
+	ClientShootProjectile(FireDirection.GetSafeNormal());
 }
 
 void ATwinStickShooterPawn::ClientShootProjectile_Implementation(FVector FireDirection)
 {
-	Shot(FireDirection);
+	ServerShot(FireDirection, GetActorLocation(), GetLocalRole() != ENetRole::ROLE_Authority);
 }
 
 void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity, float ServerTimeStamp)
