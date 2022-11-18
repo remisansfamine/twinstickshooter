@@ -81,6 +81,13 @@ private:
 	UFUNCTION(Client, Reliable)
     void ClientAdjustMovement(const FVector& ClientLocation, const FVector& ClientVelocity, float ServerTimeStamp);
 	
+
+	UFUNCTION(Server, Reliable)
+	void ServerShootProjectile(FVector FireDirection);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ClientShootProjectile(FVector FireDirection);
+	
 	UFUNCTION(Server, Unreliable, WithValidation)
     void ServerMove(const FVector& Delta, const FVector& ClientLocation);
 	void ServerMoveHandleClientError(const FVector& ClientLocation);
@@ -117,6 +124,8 @@ private:
 
 	/* Fire a shot in the specified direction */
 	void FireShot(FVector FireDirection);
+
+	void Shot(FVector FireDirection);
 
 	/* Compute Pawn movement */
 	void ComputeMove(float DeltaSeconds);
