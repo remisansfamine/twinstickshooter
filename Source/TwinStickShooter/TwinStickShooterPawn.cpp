@@ -132,6 +132,7 @@ void ATwinStickShooterPawn::Move(const FVector& Delta) const
 	}
 }
 
+
 void ATwinStickShooterPawn::ClientUpdatePositionAfterServerUpdate()
 {
 	if (!bUpdatePosition)
@@ -147,6 +148,29 @@ void ATwinStickShooterPawn::ClientUpdatePositionAfterServerUpdate()
 	bUpdatePosition = false;
 }
 
+void ATwinStickShooterPawn::Shot(FVector FireDirection)
+{
+	const FRotator FireRotation = FireDirection.Rotation();
+	// Spawn projectile at an offset from this pawn
+	const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(GunOffset);
+
+	UWorld* const World = GetWorld();
+	if (World != NULL)
+	{
+		// Spawn the projectile
+		World->SpawnActor<ATwinStickShooterProjectile>(SpawnLocation, FireRotation);
+	}
+
+	bCanFire = false;
+	World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &ATwinStickShooterPawn::ShotTimerExpired, FireRate);
+
+	// try and play the sound if specified
+	if (FireSound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+	}
+}
+
 void ATwinStickShooterPawn::FireShot(FVector FireDirection)
 {
 	// If we it's ok to fire again
@@ -155,27 +179,7 @@ void ATwinStickShooterPawn::FireShot(FVector FireDirection)
 		// If we are pressing fire stick in a direction
 		if (FireDirection.SizeSquared() > 0.0f)
 		{
-			const FRotator FireRotation = FireDirection.Rotation();
-			// Spawn projectile at an offset from this pawn
-			const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(GunOffset);
-
-			UWorld* const World = GetWorld();
-			if (World != nullptr)
-			{
-				// spawn the projectile
-				World->SpawnActor<ATwinStickShooterProjectile>(SpawnLocation, FireRotation);
-			}
-
-			bCanFire = false;
-			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &ATwinStickShooterPawn::ShotTimerExpired, FireRate);
-
-			// try and play the sound if specified
-			if (FireSound != nullptr)
-			{
-				UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-			}
-
-			bCanFire = false;
+			ServerShootProjectile(FireDirection);
 		}
 	}
 }
@@ -216,7 +220,17 @@ float ATwinStickShooterPawn::TakeDamage(float DamageAmount, struct FDamageEvent 
 	return ActualDamage;
 }
 
-void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity, float ServerTimeStamp)
+void ATwinStickShooterPawn::ServerShootProjectile_Implementation(FVector FireDirection)
+{
+	ClientShootProjectile(FireDirection);
+}
+
+void ATwinStickShooterPawn::ClientShootProjectile_Implementation(FVector FireDirection)
+{
+	Shot(FireDirection);
+}
+
+void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity)
 {
 	SetActorLocation(ClientLocation);
 	RootComponent->ComponentVelocity = ClientVelocity;
@@ -236,9 +250,10 @@ void ATwinStickShooterPawn::ServerMoveHandleClientError(const FVector& ClientLoc
 
 void ATwinStickShooterPawn::ServerMove_Implementation(const FVector& Delta, const FVector& ClientLocation)
 {
-	// Move Autonomous (Client)
+	// Move the client for every clients
 	Move(Delta);
 
+	// Check for a potential position error
 	ServerMoveHandleClientError(ClientLocation);
 }
 
