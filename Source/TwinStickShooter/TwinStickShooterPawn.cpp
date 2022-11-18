@@ -230,7 +230,7 @@ void ATwinStickShooterPawn::ClientShootProjectile_Implementation(FVector FireDir
 	Shot(FireDirection);
 }
 
-void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity)
+void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity, float ServerTimeStamp)
 {
 	SetActorLocation(ClientLocation);
 	RootComponent->ComponentVelocity = ClientVelocity;
