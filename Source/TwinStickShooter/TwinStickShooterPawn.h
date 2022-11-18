@@ -4,12 +4,25 @@
 #include "GameFramework/Character.h"
 #include "TwinStickShooterPawn.generated.h"
 
+USTRUCT()
+struct FNetworkMove
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	FVector DeltaMovement;
+
+	UPROPERTY()
+	float Timestamp;
+};
+
+
 UCLASS(Blueprintable)
 class ATwinStickShooterPawn : public APawn
 {
 	GENERATED_BODY()
 
-	const float MaxLocationDistanceDiff = 10.f;
+	const float MaxSqrdLocationDistanceDiff = 100.f;
 
 	/* The mesh component */
 	UPROPERTY(Category = Mesh, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -63,22 +76,29 @@ public:
 	static const FName FireRightBinding;
 
 private:
-
-	UFUNCTION(Client, Reliable)
-    void ClientAdjustMovement(const FVector& ClientLocation, const FVector& ClientVelocity);
+	float TimeStamp = 0.f;
 	
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Client, Reliable)
+    void ClientAdjustMovement(const FVector& ClientLocation, const FVector& ClientVelocity, float ServerTimeStamp);
+	
+	UFUNCTION(Server, Unreliable, WithValidation)
     void ServerMove(const FVector& Delta, const FVector& ClientLocation);
 	void ServerMoveHandleClientError(const FVector& ClientLocation);
 	
 	void ReplicateMoveToServer(const FVector& Delta);
-	void Move(const FVector& Delta);
-		
+	void Move(const FVector& Delta) const;
+
+	TQueue<FNetworkMove> SavedMoves;
+	
+	void ClientUpdatePositionAfterServerUpdate();
+	
 	/* Flag to control firing  */
 	uint32 bCanFire : 1;
 
 	/* Flag to set death state */
 	uint32 bIsAlive : 1;
+
+	bool bUpdatePosition = false;
 
 	/** Handle for efficient management of ShotTimerExpired timer */
 	FTimerHandle TimerHandle_ShotTimerExpired;

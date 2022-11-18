@@ -100,33 +100,51 @@ void ATwinStickShooterPawn::ComputeMove(float DeltaSeconds)
 	const FVector Movement = MoveDirection * MoveSpeed * DeltaSeconds;
 
 	// Handle Server movement response
-	// Snap position TODO
+	ClientUpdatePositionAfterServerUpdate();
 	
 	ReplicateMoveToServer(Movement);
 }
 
 void ATwinStickShooterPawn::ReplicateMoveToServer(const FVector& Delta)
 {
+	const FNetworkMove SavedMove = FNetworkMove { Delta, TimeStamp };
+	SavedMoves.Enqueue(SavedMove);
+
 	Move(Delta);
 	ServerMove(Delta, GetActorLocation());
 }
 
-void ATwinStickShooterPawn::Move(const FVector& Movement)
+void ATwinStickShooterPawn::Move(const FVector& Delta) const
 {
 	// If non-zero size, move this actor
-	if (Movement.SizeSquared() > 0.0f)
+	if (Delta.SizeSquared() > 0.0f)
 	{
-		const FRotator NewRotation = Movement.Rotation();
+		const FRotator NewRotation = Delta.Rotation();
 		FHitResult Hit(1.f);
-		RootComponent->MoveComponent(Movement, NewRotation, true, &Hit);
+		RootComponent->MoveComponent(Delta, NewRotation, true, &Hit);
 
 		if (Hit.IsValidBlockingHit())
 		{
 			const FVector Normal2D = Hit.Normal.GetSafeNormal2D();
-			const FVector Deflection = FVector::VectorPlaneProject(Movement, Normal2D) * (1.f - Hit.Time);
+			const FVector Deflection = FVector::VectorPlaneProject(Delta, Normal2D) * (1.f - Hit.Time);
 			RootComponent->MoveComponent(Deflection, NewRotation, true);
 		}
 	}
+}
+
+void ATwinStickShooterPawn::ClientUpdatePositionAfterServerUpdate()
+{
+	if (!bUpdatePosition)
+		return;
+
+	FNetworkMove Movement;
+	while (SavedMoves.Dequeue(Movement))
+	{
+		if (Movement.Timestamp >= TimeStamp)
+			Move(Movement.DeltaMovement);
+	}
+	
+	bUpdatePosition = false;
 }
 
 void ATwinStickShooterPawn::FireShot(FVector FireDirection)
@@ -142,7 +160,7 @@ void ATwinStickShooterPawn::FireShot(FVector FireDirection)
 			const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(GunOffset);
 
 			UWorld* const World = GetWorld();
-			if (World != NULL)
+			if (World != nullptr)
 			{
 				// spawn the projectile
 				World->SpawnActor<ATwinStickShooterProjectile>(SpawnLocation, FireRotation);
@@ -198,19 +216,20 @@ float ATwinStickShooterPawn::TakeDamage(float DamageAmount, struct FDamageEvent 
 	return ActualDamage;
 }
 
-void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity)
+void ATwinStickShooterPawn::ClientAdjustMovement_Implementation(const FVector& ClientLocation, const FVector& ClientVelocity, float ServerTimeStamp)
 {
 	SetActorLocation(ClientLocation);
 	RootComponent->ComponentVelocity = ClientVelocity;
+	TimeStamp = ServerTimeStamp;
+	bUpdatePosition = true;
 }
 
 void ATwinStickShooterPawn::ServerMoveHandleClientError(const FVector& ClientLocation)
 {
-	const FVector LocationDelta = GetActorLocation() - ClientLocation;
-	if (LocationDelta.Size() > MaxLocationDistanceDiff)
+	if (FVector::DistSquared(GetActorLocation(), ClientLocation) > MaxSqrdLocationDistanceDiff)
 	{
 		// Adjust the client movement
-		ClientAdjustMovement(GetActorLocation(), GetRootComponent()->ComponentVelocity);
+		ClientAdjustMovement(GetActorLocation(), GetRootComponent()->ComponentVelocity, GetWorld()->RealTimeSeconds);
 		GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Blue, "Error");
 	}
 }
