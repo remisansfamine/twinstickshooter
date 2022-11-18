@@ -35,17 +35,11 @@ ATwinStickShooterProjectile::ATwinStickShooterProjectile()
 	InitialLifeSpan = 3.0f;
 }
 
-void ATwinStickShooterProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit )
+void ATwinStickShooterProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// Only the server can hit, remove client hit
-	if (GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "Cant hit from client");
-		return;
-	}
-	
+	// Only add impulse and damages if it is the server projectile
 	// Only add impulse and destroy projectile if we hit a physics
-	if ((OtherActor != NULL) && (OtherActor != this))
+	if (!bIsVirtual && (OtherActor != NULL) && (OtherActor != this))
 	{
 		if (OtherActor->GetClass()->IsChildOf(ATwinStickShooterPawn::StaticClass()))
 		{
