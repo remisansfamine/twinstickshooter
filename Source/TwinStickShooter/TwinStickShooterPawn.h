@@ -125,7 +125,7 @@ private:
 	/* Fire a shot in the specified direction */
 	void FireShot(FVector FireDirection);
 
-	void Shot(FVector FireDirection);
+	void ServerShot(FVector FireDirection, FVector ClientLocation, bool bIsVirtualShot);
 
 	/* Compute Pawn movement */
 	void ComputeMove(float DeltaSeconds);

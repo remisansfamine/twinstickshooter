@@ -23,6 +23,8 @@ class ATwinStickShooterProjectile : public AActor
 public:
 	ATwinStickShooterProjectile();
 
+	bool bIsVirtual = false;
+
 	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadWrite)
 	float DamageAmount = 1.0f;
 
