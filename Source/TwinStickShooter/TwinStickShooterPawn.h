@@ -80,13 +80,12 @@ private:
 	
 	UFUNCTION(Client, Reliable)
     void ClientAdjustMovement(const FVector& ClientLocation, const FVector& ClientVelocity, float ServerTimeStamp);
-	
 
 	UFUNCTION(Server, Reliable)
-	void ServerShootProjectile(FVector FireDirection);
+	void ServerSpawnProjectile(const FVector& FireDirection);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void ClientShootProjectile(FVector FireDirection);
+	void MultiSpawnProjectile(const FVector& FireDirection);
 	
 	UFUNCTION(Server, Unreliable, WithValidation)
     void ServerMove(const FVector& Delta, const FVector& ClientLocation);
@@ -123,15 +122,20 @@ private:
 	int CurrentHealthPoints;
 
 	/* Fire a shot in the specified direction */
-	void FireShot(FVector FireDirection);
+	void FireShot(const FVector& FireDirection);
 
-	void ServerShot(FVector FireDirection, FVector ClientLocation, bool bIsVirtualShot);
+	void ServerShot(const FVector& FireDirection, const FVector& ClientLocation, bool bIsVirtualShot);
 
 	/* Compute Pawn movement */
 	void ComputeMove(float DeltaSeconds);
 
 	/* Revive Pawn */
-	void Revive();
+	UFUNCTION(NetMulticast, Reliable)
+	void MultiRevive();
+	
+	/* Kill pawn Pawn */
+	UFUNCTION(NetMulticast, Reliable)
+	void MultiDie();
 
 	float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
