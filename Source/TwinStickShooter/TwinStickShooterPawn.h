@@ -134,6 +134,8 @@ private:
 	void MultiRevive();
 	
 	/* Kill pawn Pawn */
+	void ServerDie(AActor* FinalDamager);
+	
 	UFUNCTION(NetMulticast, Reliable)
 	void MultiDie();
 

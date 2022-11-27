@@ -3,12 +3,14 @@
 #include "TwinStickShooterGameMode.h"
 #include "TwinStickShooter.h"
 #include "TwinStickShooterPawn.h"
+#include "TwinStickShooterPlayerState.h"
 #include "GameFrameWork/PlayerStart.h"
 
 ATwinStickShooterGameMode::ATwinStickShooterGameMode()
 {
 	// set default pawn class to our character class
 	DefaultPawnClass = ATwinStickShooterPawn::StaticClass();
+	PlayerStateClass = ATwinStickShooterPlayerState::StaticClass();
 }
 
 AActor * ATwinStickShooterGameMode::ChoosePlayerStart_Implementation(AController * Player)
