@@ -6,6 +6,8 @@
 #include "TimerManager.h"
 #include <Runtime/Engine/Classes/Engine/Engine.h>
 
+#include "TwinStickShooterPlayerState.h"
+
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5, FColor::White,text)
 
 const FName ATwinStickShooterPawn::MoveForwardBinding("MoveForward");
@@ -148,7 +150,7 @@ void ATwinStickShooterPawn::ClientUpdatePositionAfterServerUpdate()
 	bUpdatePosition = false;
 }
 
-void ATwinStickShooterPawn::ServerShot(FVector FireDirection, FVector ClientLocation, bool bIsVirtualShot)
+void ATwinStickShooterPawn::ServerShot(const FVector& FireDirection, const FVector& ClientLocation, bool bIsVirtualShot)
 {
 	const FRotator FireRotation = FireDirection.Rotation();
 	// Spawn projectile at an offset from this pawn
@@ -159,7 +161,10 @@ void ATwinStickShooterPawn::ServerShot(FVector FireDirection, FVector ClientLoca
 	{
 		// Spawn the projectile
 		if (ATwinStickShooterProjectile* projectile = World->SpawnActor<ATwinStickShooterProjectile>(SpawnLocation, FireRotation))
+		{
+			projectile->SetOwner(this);
 			projectile->bIsVirtual = bIsVirtualShot;
+		}
 	}
 
 	bCanFire = false;
@@ -172,7 +177,7 @@ void ATwinStickShooterPawn::ServerShot(FVector FireDirection, FVector ClientLoca
 	}
 }
 
-void ATwinStickShooterPawn::FireShot(FVector FireDirection)
+void ATwinStickShooterPawn::FireShot(const FVector& FireDirection)
 {
 	// If we it's ok to fire again
 	if (bCanFire == true)
@@ -180,7 +185,7 @@ void ATwinStickShooterPawn::FireShot(FVector FireDirection)
 		// If we are pressing fire stick in a direction
 		if (FireDirection.SizeSquared() > 0.0f)
 		{
-			ServerShootProjectile(FireDirection);
+			ServerSpawnProjectile(FireDirection);
 		}
 	}
 }
@@ -190,16 +195,43 @@ void ATwinStickShooterPawn::ShotTimerExpired()
 	bCanFire = true;
 }
 
-void ATwinStickShooterPawn::Revive()
+void ATwinStickShooterPawn::ServerDie(AActor* FinalDamager)
 {
-	print("Reviving Player !");
+	if (ATwinStickShooterProjectile* projectile = Cast<ATwinStickShooterProjectile>(FinalDamager))
+	{
+
+		ATwinStickShooterPawn* killer = Cast<ATwinStickShooterPawn>(projectile->GetOwner());
+		ATwinStickShooterPlayerState* killerPS = Cast<ATwinStickShooterPlayerState>(killer->GetPlayerState());
+		killerPS->KillCount++;		
+		killerPS->SetScore(killerPS->GetScore() + 1);
+	}
+
+	ATwinStickShooterPlayerState* selfPS = Cast<ATwinStickShooterPlayerState>(GetPlayerState());
+	selfPS->DeathCount++;
+	
+	MultiDie();
+}
+
+void ATwinStickShooterPawn::MultiDie_Implementation()
+{
+	bIsAlive = false;
+	CurrentHealthPoints = 0;
+	ShipMeshComponent->SetVisibility(false);
+	ShipMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (GetLocalRole() == ENetRole::ROLE_Authority)
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_Revive, this, &ATwinStickShooterPawn::MultiRevive, ReviveDelay, false);
+}
+
+void ATwinStickShooterPawn::MultiRevive_Implementation()
+{
 	bIsAlive = true;
 	CurrentHealthPoints = MaxHealthPoints;
 	ShipMeshComponent->SetVisibility(true);
 	ShipMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
-float ATwinStickShooterPawn::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+float ATwinStickShooterPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
@@ -207,27 +239,18 @@ float ATwinStickShooterPawn::TakeDamage(float DamageAmount, struct FDamageEvent 
 	{
 		CurrentHealthPoints -= ActualDamage;
 		if (CurrentHealthPoints <= 0)
-		{
-			print("Player is dead");
-			bIsAlive = false;
-			CurrentHealthPoints = 0;
-			ShipMeshComponent->SetVisibility(false);
-			ShipMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			//K2_DestroyActor();
-			// "revive" player after a delay
-			GetWorld()->GetTimerManager().SetTimer(TimerHandle_Revive, this, &ATwinStickShooterPawn::Revive, ReviveDelay, false);
-		}
+			ServerDie(DamageCauser);
 	}
 	return ActualDamage;
 }
 
-void ATwinStickShooterPawn::ServerShootProjectile_Implementation(FVector FireDirection)
+void ATwinStickShooterPawn::ServerSpawnProjectile_Implementation(const FVector& FireDirection)
 {
 	// TODO Use TimeStamp to know where and when the client has shoot
-	ClientShootProjectile(FireDirection.GetSafeNormal());
+	MultiSpawnProjectile(FireDirection.GetSafeNormal());
 }
 
-void ATwinStickShooterPawn::ClientShootProjectile_Implementation(FVector FireDirection)
+void ATwinStickShooterPawn::MultiSpawnProjectile_Implementation(const FVector& FireDirection)
 {
 	ServerShot(FireDirection, GetActorLocation(), GetLocalRole() != ENetRole::ROLE_Authority);
 }
