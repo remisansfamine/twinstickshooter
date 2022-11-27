@@ -122,12 +122,14 @@ private:
 	int CurrentHealthPoints;
 
 	/* Fire a shot in the specified direction */
-	void FireShot(const FVector& FireDirection);
+	void FireShotOnServer(const FVector& FireDirection);
+	void FireShotOnHost(const FVector& FireDirection);
 
 	void ServerShot(const FVector& FireDirection, const FVector& ClientLocation, bool bIsVirtualShot);
 
 	/* Compute Pawn movement */
-	void ComputeMove(float DeltaSeconds);
+	void ComputeMoveOnServer(float DeltaSeconds);
+	void ComputeMoveOnHost(float DeltaSeconds);
 
 	/* Revive Pawn */
 	UFUNCTION(NetMulticast, Reliable)
