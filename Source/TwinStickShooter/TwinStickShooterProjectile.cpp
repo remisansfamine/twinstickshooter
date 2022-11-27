@@ -39,7 +39,7 @@ void ATwinStickShooterProjectile::OnHit(UPrimitiveComponent* HitComponent, AActo
 {
 	// Only add impulse and damages if it is the server projectile
 	// Only add impulse and destroy projectile if we hit a physics
-	if (!bIsVirtual && (OtherActor != NULL) && (OtherActor != this))
+	if (!bIsVirtual && OtherActor && OtherActor != this)
 	{
 		if (OtherActor->GetClass()->IsChildOf(ATwinStickShooterPawn::StaticClass()))
 		{
