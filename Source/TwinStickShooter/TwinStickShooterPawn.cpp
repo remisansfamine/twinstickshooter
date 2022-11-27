@@ -67,33 +67,35 @@ void ATwinStickShooterPawn::SetupPlayerInputComponent(class UInputComponent* Pla
 
 void ATwinStickShooterPawn::Tick(float DeltaSeconds)
 {
-	// Cancel movement logic for server
-	if (GetLocalRole() != ENetRole::ROLE_AutonomousProxy)
-		return;
-	
 	if (!bIsAlive)
 		return;
-
-	// Find movement direction
-	ForwardValue = GetInputAxisValue(MoveForwardBinding);
-	RightValue = GetInputAxisValue(MoveRightBinding);
-
-	// Clamp max size so that (X=1, Y=1) doesn't cause faster movement in diagonal directions
-	MoveDirection = FVector(ForwardValue, RightValue, 0.f).GetClampedToMaxSize(1.0f);
 
 	// Create fire direction vector
 	const float FireForwardValue = GetInputAxisValue(FireForwardBinding);
 	const float FireRightValue = GetInputAxisValue(FireRightBinding);
-	const FVector FireDirection = FVector(FireForwardValue, FireRightValue, 0.f);
+	const FVector FireDirection = FVector(FireForwardValue, FireRightValue, 0.f).GetSafeNormal();
 
-	// Try and fire a shot
-	FireShot(FireDirection.GetSafeNormal());
+	// Find movement direction
+	ForwardValue = GetInputAxisValue(MoveForwardBinding);
+	RightValue = GetInputAxisValue(MoveRightBinding);
+	
+	// Clamp max size so that (X=1, Y=1) doesn't cause faster movement in diagonal directions
+	MoveDirection = FVector(ForwardValue, RightValue, 0.f).GetClampedToMaxSize(1.0f);
 
-	// Apply movement
-	ComputeMove(DeltaSeconds);
+	// Apply movement and shots
+	if (GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		FireShotOnServer(FireDirection);
+		ComputeMoveOnServer(DeltaSeconds);
+	}
+	else if (GetLocalRole() == ROLE_Authority && GetNetMode() == ENetMode::NM_ListenServer)
+	{
+		FireShotOnHost(FireDirection);
+		ComputeMoveOnHost(DeltaSeconds);
+	}
 }
 
-void ATwinStickShooterPawn::ComputeMove(float DeltaSeconds)
+void ATwinStickShooterPawn::ComputeMoveOnServer(float DeltaSeconds)
 {
 	if (ForwardValue == 0.0f && RightValue == 0.0f)
 		return;
@@ -105,6 +107,17 @@ void ATwinStickShooterPawn::ComputeMove(float DeltaSeconds)
 	ClientUpdatePositionAfterServerUpdate();
 	
 	ReplicateMoveToServer(Movement);
+}
+
+void ATwinStickShooterPawn::ComputeMoveOnHost(float DeltaSeconds)
+{
+	if (ForwardValue == 0.0f && RightValue == 0.0f)
+		return;
+
+	// Calculate  movement
+	const FVector Movement = MoveDirection * MoveSpeed * DeltaSeconds;
+
+	Move(Movement);
 }
 
 void ATwinStickShooterPawn::ReplicateMoveToServer(const FVector& Delta)
@@ -177,7 +190,7 @@ void ATwinStickShooterPawn::ServerShot(const FVector& FireDirection, const FVect
 	}
 }
 
-void ATwinStickShooterPawn::FireShot(const FVector& FireDirection)
+void ATwinStickShooterPawn::FireShotOnServer(const FVector& FireDirection)
 {
 	// If we it's ok to fire again
 	if (bCanFire == true)
@@ -186,6 +199,19 @@ void ATwinStickShooterPawn::FireShot(const FVector& FireDirection)
 		if (FireDirection.SizeSquared() > 0.0f)
 		{
 			ServerSpawnProjectile(FireDirection);
+		}
+	}
+}
+
+void ATwinStickShooterPawn::FireShotOnHost(const FVector& FireDirection)
+{
+	// If we it's ok to fire again
+	if (bCanFire == true)
+	{
+		// If we are pressing fire stick in a direction
+		if (FireDirection.SizeSquared() > 0.0f)
+		{
+			MultiSpawnProjectile(FireDirection.GetSafeNormal());
 		}
 	}
 }
