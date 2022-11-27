@@ -6,6 +6,8 @@
 #include "TimerManager.h"
 #include <Runtime/Engine/Classes/Engine/Engine.h>
 
+#include "TwinStickShooterPlayerState.h"
+
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5, FColor::White,text)
 
 const FName ATwinStickShooterPawn::MoveForwardBinding("MoveForward");
@@ -193,6 +195,23 @@ void ATwinStickShooterPawn::ShotTimerExpired()
 	bCanFire = true;
 }
 
+void ATwinStickShooterPawn::ServerDie(AActor* FinalDamager)
+{
+	if (ATwinStickShooterProjectile* projectile = Cast<ATwinStickShooterProjectile>(FinalDamager))
+	{
+
+		ATwinStickShooterPawn* killer = Cast<ATwinStickShooterPawn>(projectile->GetOwner());
+		ATwinStickShooterPlayerState* killerPS = Cast<ATwinStickShooterPlayerState>(killer->GetPlayerState());
+		killerPS->KillCount++;		
+		killerPS->SetScore(killerPS->GetScore() + 1);
+	}
+
+	ATwinStickShooterPlayerState* selfPS = Cast<ATwinStickShooterPlayerState>(GetPlayerState());
+	selfPS->DeathCount++;
+	
+	MultiDie();
+}
+
 void ATwinStickShooterPawn::MultiDie_Implementation()
 {
 	bIsAlive = false;
@@ -220,7 +239,7 @@ float ATwinStickShooterPawn::TakeDamage(float DamageAmount, FDamageEvent const& 
 	{
 		CurrentHealthPoints -= ActualDamage;
 		if (CurrentHealthPoints <= 0)
-			MultiDie();
+			ServerDie(DamageCauser);
 	}
 	return ActualDamage;
 }
