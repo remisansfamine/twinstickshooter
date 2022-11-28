@@ -40,6 +40,9 @@ void ATwinStickShooterPlayerState::SetUsername(const FString& NewUsername)
 void ATwinStickShooterPlayerState::SetServerUsername_Implementation(const FString& NewUsername)
 {
 	Username = NewUsername;
+
+	if (OnUsernameChange.IsBound())
+		OnUsernameChange.Broadcast(Username);
 }
 
 void ATwinStickShooterPlayerState::OnRep_Username() const
@@ -57,6 +60,9 @@ void ATwinStickShooterPlayerState::SetColor(const FLinearColor& NewColor)
 void ATwinStickShooterPlayerState::SetServerColor_Implementation(const FLinearColor& NewColor)
 {
 	Color = NewColor;
+
+	if (OnColorChange.IsBound())
+		OnColorChange.Broadcast(Color);
 }
 
 void ATwinStickShooterPlayerState::OnRep_Color() const
@@ -70,5 +76,5 @@ void ATwinStickShooterPlayerState::OnRep_Score()
 	Super::OnRep_Score();
 	
 	if (OnScoreChange.IsBound())
-		OnScoreChange.Broadcast(Score);
+		OnScoreChange.Broadcast(GetScore());
 }
