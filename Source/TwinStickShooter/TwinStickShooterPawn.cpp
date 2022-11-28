@@ -67,6 +67,8 @@ void ATwinStickShooterPawn::SetupPlayerInputComponent(class UInputComponent* Pla
 
 void ATwinStickShooterPawn::Tick(float DeltaSeconds)
 {
+	Super::Tick(DeltaSeconds);
+	
 	if (!bIsAlive)
 		return;
 
