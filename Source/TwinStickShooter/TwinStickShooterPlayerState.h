@@ -21,5 +21,14 @@ public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	int KillCount = 0;
 
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
+	FString Username = "Player";
+
+	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(Server, Reliable)
+	void SetUsername(const FString& NewUsername);
+
+	void UpdateUsername();
 };
