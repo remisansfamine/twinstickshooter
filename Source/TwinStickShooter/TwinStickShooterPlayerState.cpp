@@ -10,7 +10,7 @@
 
 void ATwinStickShooterPlayerState::BeginPlay()
 {
-	UpdateUsername();
+	UpdateData();
 }
 
 void ATwinStickShooterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -21,16 +21,36 @@ void ATwinStickShooterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePr
 	DOREPLIFETIME(ATwinStickShooterPlayerState, Username);
 }
 
-void ATwinStickShooterPlayerState::UpdateUsername()
+void ATwinStickShooterPlayerState::UpdateData()
 {
 	if (GetLocalRole() != ENetRole::ROLE_AutonomousProxy || GetRemoteRole() == ENetRole::ROLE_Authority)
 	{
 		if (UTwinStickShooterInstance* instance = Cast<UTwinStickShooterInstance>(GetGameInstance()))
-			SetUsername(instance->Username);
+		{
+			SetUsername(instance->PlayerUsername);
+			SetColor(instance->PlayerColor);
+		}
 	}
 }
 
-void ATwinStickShooterPlayerState::SetUsername_Implementation(const FString& NewUsername)
+void ATwinStickShooterPlayerState::SetUsername(const FString& NewUsername)
 {
 	Username = NewUsername;
+	SetServerUsername(NewUsername);
+}
+
+void ATwinStickShooterPlayerState::SetServerUsername_Implementation(const FString& NewUsername)
+{
+	Username = NewUsername;
+}
+
+void ATwinStickShooterPlayerState::SetColor(const FLinearColor& NewColor)
+{
+	Color = NewColor;
+	SetServerColor(NewColor);
+}
+
+void ATwinStickShooterPlayerState::SetServerColor_Implementation(const FLinearColor& NewColor)
+{
+	Color = NewColor;
 }

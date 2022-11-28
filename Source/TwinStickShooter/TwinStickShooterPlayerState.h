@@ -21,14 +21,24 @@ public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	int KillCount = 0;
 
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly)
 	FString Username = "Player";
 
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly)
+	FLinearColor Color = FLinearColor::Red;
+	
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(Server, Reliable)
+	void SetServerUsername(const FString& NewUsername);
 	void SetUsername(const FString& NewUsername);
 
-	void UpdateUsername();
+	UFUNCTION(Server, Reliable)
+	void SetServerColor(const FLinearColor& NewColor);
+	void SetColor(const FLinearColor& NewColor);
+
+	void UpdateData();
+
+
 };

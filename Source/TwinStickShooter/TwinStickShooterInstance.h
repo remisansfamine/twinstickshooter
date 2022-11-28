@@ -16,5 +16,8 @@ class TWINSTICKSHOOTER_API UTwinStickShooterInstance : public UGameInstance
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString Username = "Player";
+	FString PlayerUsername = "Player";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FLinearColor PlayerColor = FLinearColor::Red;
 };
