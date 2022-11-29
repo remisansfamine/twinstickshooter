@@ -60,4 +60,7 @@ public:
 	void SetColor(const FLinearColor& NewColor);
 
 	void UpdateData();
+
+	UFUNCTION(Server, Reliable)
+	void UpdateGMScore();
 };
