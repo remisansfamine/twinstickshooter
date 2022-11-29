@@ -227,15 +227,21 @@ void ATwinStickShooterPawn::ServerDie(AActor* FinalDamager)
 {
 	if (ATwinStickShooterProjectile* projectile = Cast<ATwinStickShooterProjectile>(FinalDamager))
 	{
-
 		ATwinStickShooterPawn* killer = Cast<ATwinStickShooterPawn>(projectile->GetOwner());
-		ATwinStickShooterPlayerState* killerPS = Cast<ATwinStickShooterPlayerState>(killer->GetPlayerState());
-		killerPS->KillCount++;		
-		killerPS->SetScore(killerPS->GetScore() + 1);
+		if (ATwinStickShooterPlayerState* killerPS = Cast<ATwinStickShooterPlayerState>(killer->GetPlayerState()))
+		{
+			killerPS->KillCount++;		
+			killerPS->SetScore(killerPS->GetScore() + 2.f);
+			killerPS->OnRep_Score();
+		}
 	}
 
-	ATwinStickShooterPlayerState* selfPS = Cast<ATwinStickShooterPlayerState>(GetPlayerState());
-	selfPS->DeathCount++;
+	if (ATwinStickShooterPlayerState* selfPS = Cast<ATwinStickShooterPlayerState>(GetPlayerState()))
+	{
+		selfPS->DeathCount++;
+		selfPS->SetScore(selfPS->GetScore() - 1.f);
+		selfPS->OnRep_Score();
+	}
 	
 	MultiDie();
 }

@@ -3,7 +3,7 @@
 
 #include "TwinStickShooterPlayerState.h"
 
-#include "TwinStickShooterGameMode.h"
+#include "TwinStickShooterGameState.h"
 #include "GameFramework/GameSession.h"
 #include "Net/UnrealNetwork.h"
 
@@ -84,6 +84,6 @@ void ATwinStickShooterPlayerState::OnRep_Score()
 
 void ATwinStickShooterPlayerState::UpdateGMScore_Implementation()
 {
-	if (ATwinStickShooterGameMode* GM = Cast<ATwinStickShooterGameMode>(GetWorld()->GetAuthGameMode()))
-		GM->UpdateBestScore(this);
+	if (ATwinStickShooterGameState* GS = Cast<ATwinStickShooterGameState>(GetWorld()->GetGameState()))
+		GS->UpdateBestScore(this);
 }
