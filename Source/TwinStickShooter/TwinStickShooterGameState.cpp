@@ -4,6 +4,17 @@
 #include "TwinStickShooterGameState.h"
 #include "Net/UnrealNetwork.h"
 
+#include "TwinStickShooterInstance.h"
+
+void ATwinStickShooterGameState::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (UTwinStickShooterInstance* instance = Cast<UTwinStickShooterInstance>(GetGameInstance()))
+		ScoreToReach = instance->ScoreToReach;
+}
+
+
 void ATwinStickShooterGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

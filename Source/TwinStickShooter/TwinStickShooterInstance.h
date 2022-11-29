@@ -20,4 +20,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FLinearColor PlayerColor = FLinearColor::Red;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float ScoreToReach = 10.f;
 };
