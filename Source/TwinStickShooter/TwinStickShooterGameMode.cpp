@@ -15,7 +15,6 @@ ATwinStickShooterGameMode::ATwinStickShooterGameMode()
 	GameStateClass = ATwinStickShooterGameState::StaticClass();
 }
 
-
 AActor * ATwinStickShooterGameMode::ChoosePlayerStart_Implementation(AController * Player)
 {
 	TArray<AActor*> FoundPlayerStarts;

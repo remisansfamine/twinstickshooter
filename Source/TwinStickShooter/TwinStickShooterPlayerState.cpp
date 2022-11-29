@@ -11,6 +11,8 @@
 
 void ATwinStickShooterPlayerState::BeginPlay()
 {
+	Super::BeginPlay();
+
 	UpdateData();
 }
 

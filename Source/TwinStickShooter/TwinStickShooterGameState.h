@@ -24,8 +24,6 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FPlayerStateEvent OnWinReached;
 	
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
 	UPROPERTY(ReplicatedUsing = OnRep_BestPlayer, BlueprintReadOnly)
 	APlayerState* BestPlayer = nullptr;
 
@@ -35,6 +33,10 @@ public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	float ScoreToReach = 20.f;
 
+	virtual void BeginPlay() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	UFUNCTION()
 	void OnRep_BestPlayer() const;
 
