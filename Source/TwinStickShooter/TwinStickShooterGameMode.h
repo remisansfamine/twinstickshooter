@@ -12,7 +12,7 @@ class ATwinStickShooterGameMode : public AGameMode
 
 public:
 	ATwinStickShooterGameMode();
-
+	
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 };
 
